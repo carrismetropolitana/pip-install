@@ -1,0 +1,23 @@
+[Unit]
+Description=PIP Kiosk Manager
+After=network-online.target graphical.target
+Wants=network-online.target
+
+[Service]
+# Replace 'ubuntu' with the actual username if different
+User=ubuntu
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/ubuntu/.Xauthority
+
+# The script to run
+ExecStart=/usr/local/bin/kiosk-manager.sh
+
+# If the script crashes, restart it automatically
+Restart=always
+RestartSec=5
+
+# Wait a bit for the desktop environment to load fully before starting
+ExecStartPre=/bin/sleep 10
+
+[Install]
+WantedBy=graphical.target

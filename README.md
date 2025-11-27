@@ -27,15 +27,28 @@ Once the installer is run, the kiosk manages the following features automaticall
 
 ### **A. Preparation**
 
-1. Transfer all four files into a single directory on the Ubuntu machine (e.g., \~/pip-install).  
-   ``` 
-   rsync -av --progress --exclude='.git' ./pip-install/ [SSH_LOCATION]:~/pip-install/ 
+1. Create a directory for installation files and navigate to it:
+
+   ```
+   mkdir -p ~/pip-install
+   cd ~/pip-install
    ```
 
-2. Ensure the installer script has permission to run:  
+2. Download the latest production branch from GitHub:
    ```
-   cd \~/pip-install  
-   chmod \+x install\_pip.sh
+   curl -L -o pip-install.zip https://github.com/carrismetropolitana/pip-install/archive/refs/heads/production.zip
+   ```
+
+3. Extract the contents:
+   ```
+   unzip pip-install.zip
+   mv pip-install-production/* .
+   rm -rf pip-install.zip pip-install-production
+   ```
+
+4. Make the installer executable:
+   ```
+   chmod +x install_pip.sh
    ```
 
 ### **B. Execution**
@@ -51,11 +64,9 @@ Run the installer with elevated permissions (sudo). The script will guide you th
 
 1. The installer will automatically start the service upon completion.  
 2. Check the service status:  
+   ```
    systemctl status pip-kiosk
-
-   *(Look for Active: active (running)).*  
-3. Perform a final test by rebooting the machine to confirm autostart functionality:  
-   sudo reboot  
+   ```
 
 ### **D. Uninstallation (Optional)**
 

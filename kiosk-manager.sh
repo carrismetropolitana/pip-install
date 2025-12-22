@@ -75,6 +75,7 @@ while true; do
     # LAUNCHER
     /usr/bin/chromium-browser \
       --app="$TARGET_URL" \
+       --no-sandbox \
       --kiosk \
       --start-fullscreen \
       --no-first-run \

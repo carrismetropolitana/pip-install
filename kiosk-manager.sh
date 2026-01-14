@@ -10,6 +10,12 @@ killall lxpanel 2>/dev/null
 
 # 2. SETUP
 
+# ENSURE GRAPHICS ENGINE IS RUNNING
+if ! pgrep Xorg > /dev/null; then
+    X :0 -nolisten tcp & 
+    sleep 5
+fi
+
 # Tell all GUI-related commands to target the main X11 display (screen 0)
 export DISPLAY=:0
 
@@ -32,9 +38,8 @@ xset s off
 # Disable DPMS (Energy Star) features: no standby, suspend, or off modes for the display
 xset -dpms
 
-# Kill any existing unclutter process so we can start a fresh one
-# unclutter hides the cursor after inactivity (common for kiosk mode)
-killall unclutter 2>/dev/null
+# Hide the cursor
+unclutter -idle 0 -root &
 
 # Start unclutter with:
 # - idle 0.1 = hide cursor after 0.1s of no input

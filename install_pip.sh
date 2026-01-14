@@ -41,6 +41,12 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# 1. Disable Manufacturer Service
+if systemctl is-active --quiet displayML_tft; then
+    execute "Stopping manufacturer service" systemctl stop displayML_tft
+    execute "Disabling manufacturer service" systemctl disable displayML_tft
+fi
+
 # Header
 clear
 echo "=========================================="
@@ -50,19 +56,49 @@ echo ""
 
 # 1. Update and Install Dependencies
 execute "Updating package lists" apt-get update
-execute "Installing Chromium & Tools" apt-get install -y chromium-browser unclutter curl x11-xserver-utils sed xdotool
+execute "Installing Kiosk Engine" apt-get install -y chromium-browser unclutter curl x11-xserver-utils sed xdotool fbset openbox xserver-xorg-video-fbdev
 
 # 2. Directory Structure
 execute "Creating /etc/pip-kiosk directory" mkdir -p /etc/pip-kiosk
 execute "Setting permissions" chmod 755 /etc/pip-kiosk
 
-# 3. Prompt for PIP ID (Interactive Step)
+# 3. X11 Configuration
+execute "Configuring FBDEV Driver" bash -c 'cat > /usr/share/X11/xorg.conf.d/99-fbdev.conf <<EOF
+Section "Device"
+  Identifier "GenericFB"
+  Driver "fbdev"
+  Option "fbdev" "/dev/fb0"
+EndSection
+EOF'
+
+execute "Configuring Virtual 4K Canvas" bash -c 'cat > /usr/share/X11/xorg.conf.d/90-virtual-canvas.conf <<EOF
+Section "Screen"
+  Identifier "Default Screen"
+  SubSection "Display"
+    Virtual 3840 2160
+  EndSubSection
+EndSection
+EOF'
+
+# 4. Openbox Config (The "Always Fullscreen" Fix)
+execute "Configuring Window Manager" bash -c 'mkdir -p /etc/xdg/openbox && cat > /etc/xdg/openbox/rc.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config>
+  <applications>
+    <application class="*">
+      <fullscreen>yes</fullscreen>
+    </application>
+  </applications>
+</openbox_config>
+EOF'
+
+# 5. Prompt for PIP ID (Interactive Step)
 echo ""
 echo -n "Enter the PIP ID for this machine (e.g., 101): "
 read PIP_ID_INPUT
 echo ""
 
-# 4. Config File Setup
+# 6. Config File Setup
 if [ -f "pip.conf" ]; then
     execute "Copying configuration template" cp pip.conf /etc/pip-kiosk/pip.conf
     execute "Setting PIP ID to $PIP_ID_INPUT" sed -i "s/^PIP_ID *=.*/PIP_ID=$PIP_ID_INPUT/" /etc/pip-kiosk/pip.conf
@@ -71,19 +107,19 @@ else
     exit 1
 fi
 
-# 5. Script Installation
+# 7. Script Installation
 execute "Installing main logic script" cp kiosk-manager.sh /usr/local/bin/kiosk-manager.sh
 execute "Making script executable" chmod +x /usr/local/bin/kiosk-manager.sh
 
-# 6. Service Installation
+# 8. Service Installation
 REAL_USER=${SUDO_USER:-$USER}
 USER_HOME=$(getent passwd $REAL_USER | cut -d: -f6)
 
 execute "Copying Systemd service file" cp pip-kiosk.service /etc/systemd/system/pip-kiosk.service
-execute "Configuring Service User ($REAL_USER)" sed -i "s/User=ubuntu/User=$REAL_USER/" /etc/systemd/system/pip-kiosk.service
-execute "Configuring User Home Path" sed -i "s|/home/ubuntu|$USER_HOME|" /etc/systemd/system/pip-kiosk.service
+execute "Configuring Service for Root" sed -i "s/User=ubuntu/User=root/" /etc/systemd/system/pip-kiosk.service
+execute "Configuring Root Home Path" sed -i "s|/home/ubuntu|/root|" /etc/systemd/system/pip-kiosk.service
 
-# 7. Cron Jobs (Auto-Reboot Every 6 Hours and Browser Forced Refresh Every 20 Minutes)
+# 9. Cron Jobs (Auto-Reboot Every 6 Hours and Browser Forced Refresh Every 20 Minutes)
 setup_cron() {
     CRON_JOB="0 */6 * * * /usr/sbin/reboot"
     (crontab -l 2>/dev/null | grep -v "reboot"; echo "$CRON_JOB") | crontab -
@@ -98,7 +134,7 @@ add_refresh_cron() {
 execute "Scheduling 20-minute forced refresh" add_refresh_cron
 
 
-# 8. Start Service
+# 10. Start Service
 execute "Reloading Systemd Daemon" systemctl daemon-reload
 execute "Enabling PIP Service" systemctl enable pip-kiosk.service
 execute "Starting Kiosk" systemctl restart pip-kiosk.service

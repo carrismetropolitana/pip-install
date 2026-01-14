@@ -15,7 +15,13 @@ export DISPLAY=:0
 
 # Ensure X11 authentication works for the current user
 # Many GUI tools require access to .Xauthority to control the display
-export XAUTHORITY="/home/$USER/.Xauthority"
+export XAUTHORITY="/root/.Xauthority"
+
+# HARDWARE SYNC (Forces 4K canvas so 1080p doesn't sit in corner)
+fbset -fb /dev/fb0 -g 3840 2160 3840 2160 32
+
+# START WINDOW MANAGER (Forces Fullscreen)
+openbox --config-file /etc/xdg/openbox/rc.xml &
 
 # Disable screen blanking (prevents the screen from turning black due to inactivity)
 xset s noblank
@@ -72,24 +78,23 @@ while true; do
         sed -i 's/"exit_type":"Crashed"/"exit_type":"Normal"/' ~/.config/chromium/Default/Preferences
     fi
 
+    rm -rf /root/.config/chromium/Default/Service\ Worker/Database/*
+
     # LAUNCHER
-    /usr/bin/chromium-browser \
+   chromium-browser \
       --app="$TARGET_URL" \
-       --no-sandbox \
       --kiosk \
-      --start-fullscreen \
-      --no-first-run \
+      --no-sandbox \
+      --test-type \
+      --window-position=0,0 \
+      --window-size=3840,2160 \
+      --force-device-scale-factor=2.0 \
+      --disable-gpu \
+      --disable-software-rasterizer \
+      --use-gl=swiftshader \
+      --incognito \
       --noerrdialogs \
-      --disable-infobars \
-      --disable-translate \
-      --disable-features=Translate \
-      --overscroll-history-navigation=0 \
-      --check-for-update-interval=31536000 \
-      --disable-session-crashed-bubble \
-      --enable-offline-auto-reload \
-      --disk-cache-dir=/dev/null \
-      --disk-cache-size=1 \
-      --incognito
+      --disable-infobars
 
     echo "Chromium crashed. Restarting in 2s..."
     sleep 2

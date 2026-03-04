@@ -34,19 +34,25 @@ Once the installer is run, the kiosk manages the following features automaticall
    cd ~/pip-install
    ```
 
-2. Download the latest production branch from GitHub:
+2. Install curl:
+   ```
+   sudo apt-get update
+   sudo apt-get install -y curl
+   ```
+
+3. Download the latest production branch from GitHub:
    ```
    curl -L -o pip-install.zip https://github.com/carrismetropolitana/pip-install/archive/refs/heads/production.zip
    ```
 
-3. Extract the contents:
+4. Extract the contents:
    ```
    unzip pip-install.zip
    mv pip-install-production/* .
    rm -rf pip-install.zip pip-install-production
    ```
 
-4. Make the installer executable:
+5. Make the installer executable:
    ```
    chmod +x install_pip.sh
    ```

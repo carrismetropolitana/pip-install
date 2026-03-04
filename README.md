@@ -1,6 +1,6 @@
 # **PIP KIOSK DEPLOYMENT GUIDE**
 
-This package is the standard deployment utility for Carris Metropolitana's interior (PIPs). It prepares the Linux machine (Raspberry Pi/Ubuntu) for continuous operation by installing the necessary software, forcing full-screen display of the main webpage, and activating the self-healing service. The only configuration required during installation is the machine's unique PIP ID.
+This package is the standard deployment utility for Carris Metropolitana's interior (PIPs). It prepares the Linux machine (Raspberry Pi/Ubuntu) for continuous operation by installing the necessary software, forcing full-screen display of the main webpage, and activating the self-healing service. During installation, you'll be prompted for the machine's unique **PIP ID**, the **stop ID(s)** to display, and the **scale factor** (used to build the final TARGET URL). The prompts show examples only (no defaults).
 
 ## **1\. System Overview and Roles**
 
@@ -58,7 +58,7 @@ Run the installer with elevated permissions (sudo). The script will guide you th
    sudo ./install\_pip.sh
    ``` 
 
-**Note:** The script will pause and ask you to enter the **unique PIP ID** for this machine. You can **re-run this script at any time** if you need to update the PIP ID.
+**Note:** The script will pause and ask you to enter the **unique PIP ID** for this machine, the **stop ID(s)** (comma-separated), and the **scale factor** (range 0.1 to 3; press Enter to use 1). You can **re-run this script at any time** if you need to update any of these values.
 
 ### **C. Verification**
 

@@ -96,12 +96,70 @@ EOF'
 echo ""
 echo -n "Enter the PIP ID for this machine (e.g., 101): "
 read PIP_ID_INPUT
+PIP_ID_INPUT=$(printf '%s' "$PIP_ID_INPUT" | tr -d '[:space:]')
+
+if [ -z "$PIP_ID_INPUT" ]; then
+  echo -e "${RED}[ERROR] PIP ID cannot be empty.${NC}"
+  exit 1
+fi
 echo ""
+
+# 5b. Prompt for stop_ids and scale, then build TARGET_URL
+trim_spaces() {
+  # Remove all whitespace characters
+  printf '%s' "$1" | tr -d '[:space:]'
+}
+
+echo -n "Enter stop id(s) (comma-separated, example: 090141,090142): "
+read STOP_IDS_INPUT
+STOP_IDS_INPUT=$(trim_spaces "$STOP_IDS_INPUT")
+
+if [ -z "$STOP_IDS_INPUT" ]; then
+  echo -e "${RED}[ERROR] stop_ids cannot be empty.${NC}"
+  exit 1
+fi
+
+if ! echo "$STOP_IDS_INPUT" | grep -Eq '^[0-9]+(,[0-9]+)*$'; then
+  echo -e "${RED}[ERROR] stop_ids must be digits separated by commas (example: 090141,090142).${NC}"
+  exit 1
+fi
+
+echo -n "Enter scale factor (range: 0.1 to 3, example: 1.2). Press Enter for 1: "
+read SCALE_INPUT
+SCALE_INPUT=$(trim_spaces "$SCALE_INPUT")
+
+if [ -z "$SCALE_INPUT" ]; then
+  SCALE_INPUT="1"
+fi
+
+if ! echo "$SCALE_INPUT" | grep -Eq '^[0-9]+(\.[0-9]+)?$'; then
+  echo -e "${RED}[ERROR] scale must be a number like 1 or 1.2.${NC}"
+  exit 1
+fi
+
+if ! awk -v v="$SCALE_INPUT" 'BEGIN { exit !(v >= 0.1 && v <= 3) }'; then
+  echo -e "${RED}[ERROR] scale must be between 0.1 and 3.${NC}"
+  exit 1
+fi
+
+# URL-encode commas in stop_ids (optional, but keeps the URL consistent)
+STOP_IDS_ENCODED=$(printf '%s' "$STOP_IDS_INPUT" | sed -e 's/,/%2C/g')
+TARGET_URL_INPUT="https://carrismetropolitana.pt/pips?stop_ids=${STOP_IDS_ENCODED}&pip_id=${PIP_ID_INPUT}&scale=${SCALE_INPUT}"
+
+escape_sed_replacement() {
+  # Escape characters that are special in sed replacement strings
+  # Delimiter used below is '|', so we escape that too.
+  # IMPORTANT: This must turn '&' into '\&' (literal '&'), otherwise sed expands it to the whole match.
+  printf '%s' "$1" | sed -e 's/[\\&|]/\\&/g'
+}
+
+SAFE_TARGET_URL=$(escape_sed_replacement "$TARGET_URL_INPUT")
 
 # 6. Config File Setup
 if [ -f "pip.conf" ]; then
     execute "Copying configuration template" cp pip.conf /etc/pip-kiosk/pip.conf
     execute "Setting PIP ID to $PIP_ID_INPUT" sed -i "s/^PIP_ID *=.*/PIP_ID=$PIP_ID_INPUT/" /etc/pip-kiosk/pip.conf
+  execute "Setting TARGET_URL" sed -i "s|^TARGET_URL *=.*|TARGET_URL=\"$SAFE_TARGET_URL\"|" /etc/pip-kiosk/pip.conf
 else
     echo -e "${RED}[ERROR] pip.conf not found in current directory!${NC}"
     exit 1

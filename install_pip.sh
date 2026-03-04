@@ -142,9 +142,45 @@ if ! awk -v v="$SCALE_INPUT" 'BEGIN { exit !(v >= 0.1 && v <= 3) }'; then
   exit 1
 fi
 
+echo -n "Enter orientation (landscape/vertical). Press Enter for landscape: "
+read ORIENTATION_INPUT
+ORIENTATION_INPUT=$(trim_spaces "$ORIENTATION_INPUT" | tr '[:upper:]' '[:lower:]')
+
+if [ -z "$ORIENTATION_INPUT" ]; then
+  ORIENTATION_INPUT="landscape"
+fi
+
+if ! echo "$ORIENTATION_INPUT" | grep -Eq '^(landscape|vertical)$'; then
+  echo -e "${RED}[ERROR] orientation must be landscape or vertical.${NC}"
+  exit 1
+fi
+
+ROTATION_INPUT=""
+if [ "$ORIENTATION_INPUT" = "vertical" ]; then
+  echo -n "Enter rotation (cw/ccw). Press Enter for cw: "
+  read ROTATION_INPUT
+  ROTATION_INPUT=$(trim_spaces "$ROTATION_INPUT" | tr '[:upper:]' '[:lower:]')
+
+  if [ -z "$ROTATION_INPUT" ]; then
+    ROTATION_INPUT="cw"
+  fi
+
+  if ! echo "$ROTATION_INPUT" | grep -Eq '^(cw|ccw)$'; then
+    echo -e "${RED}[ERROR] rotation must be cw or ccw.${NC}"
+    exit 1
+  fi
+fi
+
 # URL-encode commas in stop_ids (optional, but keeps the URL consistent)
 STOP_IDS_ENCODED=$(printf '%s' "$STOP_IDS_INPUT" | sed -e 's/,/%2C/g')
-TARGET_URL_INPUT="https://carrismetropolitana.pt/pips?stop_ids=${STOP_IDS_ENCODED}&pip_id=${PIP_ID_INPUT}&scale=${SCALE_INPUT}"
+QUERY="stop_ids=${STOP_IDS_ENCODED}&pip_id=${PIP_ID_INPUT}&scale=${SCALE_INPUT}"
+
+# Default landscape is omitted from the URL
+if [ "$ORIENTATION_INPUT" = "vertical" ]; then
+  QUERY="${QUERY}&orientation=vertical&rotation=${ROTATION_INPUT}"
+fi
+
+TARGET_URL_INPUT="https://carrismetropolitana.pt/pips?${QUERY}"
 
 escape_sed_replacement() {
   # Escape characters that are special in sed replacement strings

@@ -64,7 +64,7 @@ Run the installer with elevated permissions (sudo). The script will guide you th
    sudo ./install\_pip.sh
    ``` 
 
-**Note:** The script will pause and ask you to enter the **unique PIP ID** for this machine, the **stop ID(s)** (comma-separated), and the **scale factor** (range 0.1 to 3; press Enter to use 1). You can **re-run this script at any time** if you need to update any of these values.
+**Note:** The script will pause and ask you to enter the **unique PIP ID**, the **stop ID(s)** (comma-separated), the **scale factor** (range 0.1 to 3; press Enter to use 1), and the **orientation** (landscape/vertical; press Enter for landscape). If you choose **vertical**, it will also ask for **rotation** (cw/ccw). You can **re-run this script at any time** if you need to update any of these values.
 
 ### **C. Verification**
 

@@ -45,6 +45,8 @@ execute "Stopping PIP kiosk service" bash -c "systemctl stop pip-kiosk.service 2
 # ------------------------------------------------------------------
 execute "Disabling PIP kiosk service" bash -c "systemctl disable pip-kiosk.service 2>/dev/null || true"
 execute "Removing systemd service file" rm -f /etc/systemd/system/pip-kiosk.service
+execute "Reloading systemd daemon" bash -c "systemctl daemon-reload 2>/dev/null || true"
+execute "Resetting failed state" bash -c "systemctl reset-failed pip-kiosk.service 2>/dev/null || true"
 
 # ------------------------------------------------------------------
 # Step 3: Remove Installed Scripts
@@ -60,8 +62,21 @@ execute "Removing /etc/pip-kiosk folder" rm -rf /etc/pip-kiosk
 # Step 5: Remove Cron Jobs
 # ------------------------------------------------------------------
 execute "Removing PIP-related cron jobs" bash -c "
-    crontab -l 2>/dev/null | grep -v 'pip-kiosk' | grep -v 'xdotool search' | crontab -
+    crontab -l 2>/dev/null \
+      | grep -v '0 \*/6 \* \* \* /usr/sbin/reboot' \
+      | grep -v 'xdotool search --onlyvisible --class chromium key F5' \
+      | crontab -
 "
+
+# ------------------------------------------------------------------
+# Step 5b: Restore Manufacturer Service (if present)
+# ------------------------------------------------------------------
+if systemctl cat displayML_tft.service >/dev/null 2>&1; then
+    execute "Enabling manufacturer service (displayML_tft)" systemctl enable displayML_tft.service
+    echo "Manufacturer service will start on next boot."
+else
+    echo -e "Manufacturer service displayML_tft.service not found; skipping."
+fi
 
 # ------------------------------------------------------------------
 # Step 6: Kill Running Processes (Chromium / lxpanel / unclutter)
@@ -88,3 +103,10 @@ echo -e "\n=========================================="
 echo -e "   ${GREEN}PIP KIOSK UNINSTALL COMPLETE${NC}"
 echo "   All files, service, and cron jobs have been removed."
 echo "=========================================="
+
+# ------------------------------------------------------------------
+# Reboot (always)
+# ------------------------------------------------------------------
+echo ""
+echo "Rebooting to restore display services..."
+reboot
